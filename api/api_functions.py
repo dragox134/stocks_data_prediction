@@ -80,7 +80,7 @@ def increment_tries(key: str):
     cursor.execute("UPDATE api_keys SET tries_today = ?, last_used = ?, available = ? WHERE api_key = ?",
                 (new_tries, date.today().isoformat(), available, key))
     conn.commit()
-    print(f"API key '{key}' used. Tries today: {new_tries}")
+    # print(f"API key '{key}' used. Tries today: {new_tries}")
 
 
 
@@ -109,24 +109,11 @@ def find_available():
     for (key,) in keys:
         info = get_api_key(key)
         if info['tries_today'] < 25:
-            return f"""#####################################################################################\n
-            Available key has been found: key: {info['api_key']} number: {info['id']}
-            \n#####################################################################################
-            """
+            # print(f"""#####################################################################################\n
+            # Available key has been found: key: {info['api_key']} number: {info['id']}
+            # \n#####################################################################################
+            # """)
+            return info['api_key']
         
     conn.close()
     return "!!!   No available key right now   !!!"
-
-
-
-# --- Example Usage ---
-
-
-
-# # Using a key
-# increment_tries("MY_SECRET_KEY_1")
-
-# # Fetch key info
-# info = get_api_key("MY_SECRET_KEY_1")
-# print(info)
-

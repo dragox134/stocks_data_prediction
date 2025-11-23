@@ -1,3 +1,4 @@
 #ignore api file
 dbs/api/
 add_api.py
+__pycache__/

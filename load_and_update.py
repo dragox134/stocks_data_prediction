@@ -3,13 +3,12 @@ import requests
 from sqlalchemy import create_engine, Column, Float, Integer, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
+from api.api_functions import find_available, increment_tries
 
 # symbol = GOOGL, df_name = google_database_60min, function = TIME_SERIES_INTRADAY
 def insert_data_into_db(symbol, df_name, function):
     # === STEP 1: GET DATA FROM ALPHA VANTAGE ===
-    API_KEY = api_list[0]
-    tfunction = function
+    API_KEY = find_available()
     SYMBOL = symbol
     if function == "TIME_SERIES_INTRADAY":
         INTERVAL = "60min"
@@ -18,7 +17,7 @@ def insert_data_into_db(symbol, df_name, function):
     URL = "https://www.alphavantage.co/query"
 
     params = {
-        "function": tfunction,
+        "function": function,
         "symbol": SYMBOL,
         "interval": INTERVAL,
         "apikey": API_KEY,
@@ -26,6 +25,7 @@ def insert_data_into_db(symbol, df_name, function):
         "datatype": "json"
     }
 
+    increment_tries(API_KEY)
     response = requests.get(URL, params=params)
     data = response.json()
 
@@ -86,12 +86,8 @@ def insert_data_into_db(symbol, df_name, function):
             close_price=row["close"],
             volume=int(row["volume"])
         )
-        session.merge(record)  # merge avoids duplicates based on primary key
+        session.merge(record)
 
     session.commit()
 
     print("Data successfully inserted into the database!")
-
-    # === STEP 4: VERIFY SAMPLE DATA ===
-    for instance in session.query(StockData).limit(5):
-        print(instance)
