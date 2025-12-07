@@ -2,3 +2,4 @@
 dbs/api/
 add_api.py
 __pycache__/
+logs_jax
