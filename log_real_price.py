@@ -6,7 +6,7 @@ import polars as pl
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 
-log_dir = "logs_jax/real_run"
+log_dir = "logs_pytorch/real_run"
 os.makedirs(log_dir, exist_ok=True)
 writer = tf.summary.create_file_writer(log_dir)
 
