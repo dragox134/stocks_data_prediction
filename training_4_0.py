@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter       #   tensorboard --logdir runs
 
 from data_loader import load_data
-
+from models import model_switch
 
 
 # setting device to train
@@ -27,78 +27,8 @@ print(f"New run saved to: {log_path}")
 
 
 train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
+model = model_switch("trs")    # lstm or trs
 
-
-
-
-
-
-# ???
-# for _, batch in enumerate(train_loader):
-#     x_batch, y_batch = batch[0].to(device), batch[1].to(device)
-#     print(x_batch.shape, y_batch.shape)
-#     break
-
-###########################################################################
-
-# LSTM model for training
-class LSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_stacked_layers):
-        super().__init__()
-        self.hidden_size = hidden_size
-        self.num_stacked_layers = num_stacked_layers
-
-        self.lstm = nn.LSTM(input_size, hidden_size, num_stacked_layers,
-                            batch_first=True)
-
-        self.fc = nn.Linear(hidden_size, 1)
-
-    def forward(self, x):
-        batch_size = x.size(0)
-        h0 = torch.zeros(self.num_stacked_layers, batch_size, self.hidden_size).to(device)
-        c0 = torch.zeros(self.num_stacked_layers, batch_size, self.hidden_size).to(device)
-
-        out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
-        return out
-
-
-###########################################################################
-
-# Transformer model for training
-class TransformerModel(nn.Module):
-    def __init__(self, input_size, hidden_size, num_stacked_layers):
-        super().__init__()
-        self.hidden_size = hidden_size
-        self.num_stacked_layers = num_stacked_layers
-        self.input_size = input_size
-        
-
-        self.input_projection = nn.Linear(input_size, hidden_size)
-        
-
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=hidden_size, 
-            nhead=4,
-            batch_first=True
-        )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_stacked_layers)
-        
-        self.fc = nn.Linear(hidden_size, 1)
-
-    def forward(self, x):
-        batch_size = x.size(0)
-        
-        x = self.input_projection(x)
-        
-        out = self.transformer(x)
-        
-        out = self.fc(out[:, -1, :])
-        return out
-
-
-
-###########################################################################
 
 # train one epoch
 def train_one_epoch():
@@ -156,14 +86,10 @@ def validate_one_epoch():
 
 ###########################################################################
 
-# training loop (choose model)
-model = TransformerModel(1, 4, 1)
-# model = LSTM(1, 4, 1)
-
 model.to(device)
 
 learning_rate = 0.001       #lstm = 0.001
-num_epochs = 100
+num_epochs = 10
 loss_function = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
