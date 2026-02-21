@@ -86,6 +86,7 @@ class TimeSeriesDataset(Dataset):
 train_dataset = TimeSeriesDataset(X_train, y_train)
 test_dataset = TimeSeriesDataset(X_test, y_test)
 
+last_real_close = data['Close'].iloc[split_index + lookback:].iloc[-1]
 
 
 ###########################################################################
@@ -96,5 +97,5 @@ def load_data(batch_size=16):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_loader, test_loader, X_train, lookback, scaler, X_test
+    return last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test
 ###########################################################################

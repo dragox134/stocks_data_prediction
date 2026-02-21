@@ -7,13 +7,14 @@ from helper_functions.data_loader import load_data
 from helper_functions.models import model_switch
 from helper_functions.tensorboard_setup import tensorboard
 from helper_functions.training_defs import train_one_epoch, validate_one_epoch
+from helper_functions.prediction import predict
 
 
 # setting device to train
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 # load data
-train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
+_, train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
 
 # choose model
 model_name = "lstm"    # lstm or trs
@@ -26,7 +27,7 @@ writer = tensorboard(run_name=model_name)
 
 # define
 learning_rate = 0.001       #lstm = 0.001
-num_epochs = 10
+num_epochs = 100
 loss_function = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
