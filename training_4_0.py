@@ -14,7 +14,7 @@ from helper_functions.prediction import predict
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 # load data
-_, train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
+last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
 
 # choose model
 model_name = "lstm"    # lstm or trs
@@ -22,7 +22,7 @@ model = model_switch(model_name)
 model.to(device)
 
 # name lstm or trs
-writer = tensorboard(run_name=model_name)
+writer, run_name = tensorboard(run_name=model_name)
 
 
 # define
@@ -39,11 +39,14 @@ for epoch in range(num_epochs):
         if loss < best_loss:
             best_loss = loss
             os.remove(last_name)
-            last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, model_name)
+            last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, run_name)
     except:
         best_loss = loss
-        last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, model_name)
+        last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, run_name)
 
 
     writer.flush()
     save_graphs(model, X_train, device, lookback, scaler, writer, X_test)
+
+
+predict(run_name, device, last_real_close, X_train, X_test)

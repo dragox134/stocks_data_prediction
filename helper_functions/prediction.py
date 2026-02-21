@@ -3,8 +3,8 @@ import numpy as np
 from copy import deepcopy as dc
 from torch.utils.tensorboard import SummaryWriter
 
-from models import model_switch
-from data_loader import load_data
+from helper_functions.models import model_switch
+from helper_functions.data_loader import load_data
 
 
 
@@ -83,23 +83,17 @@ def log_to_tensorboard(writer, X_train, X_test, predictions_real, last_real_clos
 
 
 
-def predict(model_name, epochs, path, ):
+def predict(name, device, last_real_close, X_train, X_test, days_to_predict=7):
 
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}\n")
-
-    MODEL_PATH = "models/lstm_74_loss:0.03163351601688191"
-    DAYS_TO_PREDICT = 7
-    PATH = "runs/prediction_1"
+    MODEL_PATH = f"models/{name}_model"
+    LOG_PATH = f"runs/predictions/{name}_prediction"
 
     model, scaler, lookback = load_checkpoint(MODEL_PATH, device)
-
-    last_real_close, _, _, X_train, _, _, X_test = load_data()
 
     last_real_window = X_test[-1].numpy().flatten()   # shape: (lookback,)
 
     print(f"Starting prediction from the last {lookback} real data points.")
-    print(f"Predicting {DAYS_TO_PREDICT} days into the future...\n")
+    print(f"Predicting {days_to_predict} days into the future...\n")
 
 
     predictions = predict_future(
@@ -107,19 +101,19 @@ def predict(model_name, epochs, path, ):
         last_window=last_real_window,
         scaler=scaler,
         lookback=lookback,
-        days_to_predict=DAYS_TO_PREDICT,
+        days_to_predict=days_to_predict,
         device=device
     )
 
 
     print(f"\n{'='*40}")
-    print(f"  Predicted closing prices (next {DAYS_TO_PREDICT} days)")
+    print(f"  Predicted closing prices (next {days_to_predict} days)")
     print(f"{'='*40}")
     for i, price in enumerate(predictions, start=1):
         print(f"  Day {i:>2}: ${price:.2f}")
     print(f"{'='*40}\n")
 
 
-    writer = SummaryWriter(f'{PATH}')
+    writer = SummaryWriter(f'{LOG_PATH}')
     log_to_tensorboard(writer, X_train, X_test, predictions, last_real_close)
     writer.close()
