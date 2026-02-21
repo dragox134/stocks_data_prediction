@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import os
 #   tensorboard --logdir runs
-from save import save_graphs, save_model
-from data_loader import load_data
-from models import model_switch
-from tensorboard_setup import tensorboard
-from training_defs import train_one_epoch, validate_one_epoch
+from helper_functions.save import save_graphs, save_model
+from helper_functions.data_loader import load_data
+from helper_functions.models import model_switch
+from helper_functions.tensorboard_setup import tensorboard
+from helper_functions.training_defs import train_one_epoch, validate_one_epoch
 
 
 # setting device to train
@@ -34,7 +34,6 @@ for epoch in range(num_epochs):
     train_one_epoch(model, epoch, train_loader, device, loss_function, optimizer, writer)
 
     loss = validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
-
     try:
         if loss < best_loss:
             best_loss = loss

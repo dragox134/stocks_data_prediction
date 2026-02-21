@@ -70,5 +70,5 @@ class TransformerModel(nn.Module):
 def model_switch(model):
     if model == "lstm":
         return LSTM(1, 4, 1)
-    else:
+    elif model == "trs":
         return TransformerModel(1, 4, 1)
