@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-
+import os
+#   tensorboard --logdir runs
 from save import save_graphs, save_model
 from data_loader import load_data
 from models import model_switch
@@ -11,17 +12,16 @@ from training_defs import train_one_epoch, validate_one_epoch
 # setting device to train
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-# name lstm or trs
-writer = tensorboard(run_name='lstm')
-
 # load data
 train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
 
 # choose model
-model = model_switch("lstm")    # lstm or trs
+model_name = "lstm"    # lstm or trs
+model = model_switch(model_name)
 model.to(device)
 
-
+# name lstm or trs
+writer = tensorboard(run_name=model_name)
 
 
 # define
@@ -32,6 +32,18 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 for epoch in range(num_epochs):
     train_one_epoch(model, epoch, train_loader, device, loss_function, optimizer, writer)
-    validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
+
+    loss = validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
+
+    try:
+        if loss < best_loss:
+            best_loss = loss
+            os.remove(last_name)
+            last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, model_name)
+    except:
+        best_loss = loss
+        last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, model_name)
+
+
     writer.flush()
-    save(model, X_train, device, lookback, scaler, writer, X_test)
+    save_graphs(model, X_train, device, lookback, scaler, writer, X_test)

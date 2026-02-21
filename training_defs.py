@@ -56,5 +56,6 @@ def validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
     print('Val Loss: {0:.3f}'.format(avg_loss_across_batches))
     print('***************************************************')
     print()
+    return running_loss
 
 ###########################################################################

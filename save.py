@@ -41,19 +41,17 @@ def save_graphs(model, X_train, device, lookback, scaler, writer, X_test):
     ###########################################################################
 
 
-def save_model(model, optimizer, epoch, val_loss, best_val_loss, scaler, lookback, path="models/best_model"):
-    if val_loss < best_val_loss:
-        print(f"new best model (val_loss: {val_loss:.6f})")
+def save_model(model, optimizer, epoch, best_val_loss, scaler, lookback, model_name, path="models/"):
+    print(f"new best model (val_loss: {best_val_loss:.6f})")
+    path = f"{path}{model_name}_{epoch}_loss:{best_val_loss}"
 
-        torch.save({
-            "epoch": epoch,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "best_val_loss": val_loss,
-            "scaler": scaler,
-            "lookback": lookback,
-        }, path)
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "best_val_loss": best_val_loss,
+        "scaler": scaler,
+        "lookback": lookback,
+    }, path)
 
-    return val_loss
-
-return best_val_loss
+    return path
