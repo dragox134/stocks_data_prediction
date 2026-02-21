@@ -3,7 +3,7 @@ import torch
 from copy import deepcopy as dc
 
 ###########################################################################
-def save(model, X_train, device, lookback, scaler, writer, X_test):
+def save_graphs(model, X_train, device, lookback, scaler, writer, X_test):
     with torch.no_grad():
         predicted = model(X_train.to(device)).to('cpu').numpy()
 
@@ -39,3 +39,21 @@ def save(model, X_train, device, lookback, scaler, writer, X_test):
         writer.add_scalar('Test/Close', price, train_length + i)
 
     ###########################################################################
+
+
+def save_model(model, optimizer, epoch, val_loss, best_val_loss, scaler, lookback, path="models/best_model"):
+    if val_loss < best_val_loss:
+        print(f"new best model (val_loss: {val_loss:.6f})")
+
+        torch.save({
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "best_val_loss": val_loss,
+            "scaler": scaler,
+            "lookback": lookback,
+        }, path)
+
+    return val_loss
+
+return best_val_loss

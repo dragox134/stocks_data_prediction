@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from save_prices import save
+from save import save_graphs, save_model
 from data_loader import load_data
 from models import model_switch
 from tensorboard_setup import tensorboard
