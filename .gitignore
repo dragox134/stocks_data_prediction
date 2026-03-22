@@ -7,3 +7,4 @@ runs/
 .github/
 stock_prediction_venv/
 .vscode/
+.venv/

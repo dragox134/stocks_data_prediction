@@ -117,3 +117,5 @@ def predict(name, device, last_real_close, X_train, X_test, days_to_predict=7):
     writer = SummaryWriter(f'{LOG_PATH}')
     log_to_tensorboard(writer, X_train, X_test, predictions, last_real_close)
     writer.close()
+
+    return np.array(predictions, dtype=float).tolist()

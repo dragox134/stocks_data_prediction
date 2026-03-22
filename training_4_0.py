@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import os
+import numpy as np
 #   tensorboard --logdir runs
 from helper_functions.save import save_graphs, save_model
 from helper_functions.data_loader import load_data
@@ -10,43 +11,86 @@ from helper_functions.training_defs import train_one_epoch, validate_one_epoch
 from helper_functions.prediction import predict
 
 
-# setting device to train
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, progress_callback=None, update_every=10):
+    print("training started")
+    # setting device to train
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-# load data
-last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test = load_data(batch_size=16)
+    # load data
+    last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test = load_data(batch_size=batch_size, lookback=lookback)
 
-# choose model
-model_name = "lstm"    # lstm or trs
-model = model_switch(model_name)
-model.to(device)
+    # choose model
+    model = model_switch(model_name)    # lstm or trs
+    model.to(device)
 
-# name lstm or trs
-writer, run_name = tensorboard(run_name=model_name)
+    # name lstm or trs
+    writer, run_name = tensorboard(run_name=model_name, custom="RandomShowcaseTest")  # add custom if you want some specific name after the official one
 
 
-# define
-learning_rate = 0.001       #lstm = 0.001
-num_epochs = 100
-loss_function = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # define
+    loss_function = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  #lstm = 0.001
 
-for epoch in range(num_epochs):
-    train_one_epoch(model, epoch, train_loader, device, loss_function, optimizer, writer)
+    best_loss = None
+    last_name = None
+    train_losses = []
+    val_losses = []
 
-    loss = validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
-    try:
-        if loss < best_loss:
-            best_loss = loss
-            os.remove(last_name)
+    for epoch in range(num_epochs):
+        print(f"Epoch {epoch+1}/{num_epochs}")
+        train_loss = train_one_epoch(model, epoch, train_loader, device, loss_function, optimizer, writer)
+        train_losses.append(float(train_loss))
+
+        val_loss = validate_one_epoch(model, epoch, test_loader, device, loss_function, writer)
+        val_losses.append(float(val_loss))
+
+        if best_loss is None or val_loss < best_loss:
+            best_loss = val_loss
+            if last_name and os.path.exists(last_name):
+                os.remove(last_name)
             last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, run_name)
-    except:
-        best_loss = loss
-        last_name = save_model(model, optimizer, epoch, best_loss, scaler, lookback, run_name)
+
+        if progress_callback and (((epoch + 1) % update_every == 0) or (epoch + 1 == num_epochs)):
+            progress_callback(
+                epoch=epoch + 1,
+                num_epochs=num_epochs,
+                train_losses=train_losses,
+                val_losses=val_losses,
+            )
 
 
-    writer.flush()
+        writer.flush()
+
+    # Save prediction graphs once after training (instead of every epoch, which creates many overlapping lines)
     save_graphs(model, X_train, device, lookback, scaler, writer, X_test)
 
+    future_pred = predict(run_name, device, last_real_close, X_train, X_test)
 
-predict(run_name, device, last_real_close, X_train, X_test)
+    writer.close()
+
+    def _inv(vals):
+        d = np.zeros((len(vals), lookback + 1))
+        d[:, 0] = vals
+        return scaler.inverse_transform(d)[:, 0].astype(float).tolist()
+
+    with torch.no_grad():
+        train_preds_scaled = model(X_train.to(device)).cpu().numpy().flatten()
+        test_preds_scaled = model(X_test.to(device)).cpu().numpy().flatten()
+
+    train_actual = _inv(y_train.numpy().flatten())
+    train_pred = _inv(train_preds_scaled)
+    test_actual = _inv(y_test.numpy().flatten())
+    test_pred = _inv(test_preds_scaled)
+
+    return {
+        "message": f"Successfully trained {model_name} model for {stock} with lr={learning_rate}, epochs={num_epochs}, batch={batch_size}, lookback={lookback}. Best val loss: {best_loss:.6f}",
+        "best_loss": float(best_loss),
+        "run_name": run_name,
+        "train_losses": train_losses,
+        "val_losses": val_losses,
+        "train_actual": train_actual,
+        "train_pred": train_pred,
+        "test_actual": test_actual,
+        "test_pred": test_pred,
+        "test_future_pred": list(future_pred),
+    }
