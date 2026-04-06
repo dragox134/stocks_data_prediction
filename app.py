@@ -28,6 +28,9 @@ TRAINING_STATE = {
     "total_epochs": 0,
     "train_losses": [],
     "val_losses": [],
+    "train_dates": [],
+    "test_dates": [],
+    "future_dates": [],
     "train_actual": [],
     "train_pred": [],
     "test_actual": [],
@@ -68,7 +71,7 @@ def placeholder_figure(title, message="Graphs will be shown here"):
 
 def line_figure(title, y_values, series_name, color):
     if not y_values:
-        return placeholder_figure(title, "Training data will show here")
+        return placeholder_figure(title, "Training data will be shown here")
 
     fig = empty_figure(title)
     fig.add_trace(
@@ -83,47 +86,69 @@ def line_figure(title, y_values, series_name, color):
     return fig
 
 
-def close_figure(title, actual, predicted, pred_color, future_pred=None, future_color="#e879f9"):
+def close_figure(title, actual, predicted, pred_color, x_values=None, future_pred=None, future_x=None, future_color="#e879f9"):
     if not actual and not predicted and not future_pred:
         return placeholder_figure(title, "Will be shown after training finishes")
 
     fig = empty_figure(title)
+    x_axis_is_date = bool(x_values or future_x)
+
     if actual:
         fig.add_trace(
             go.Scatter(
-                x=list(range(1, len(actual) + 1)),
+                x=x_values[:len(actual)] if x_values else list(range(1, len(actual) + 1)),
                 y=actual,
                 mode="lines",
                 name="Actual",
                 line={"color": "rgba(148, 163, 184, 0.45)", "width": 1.5},
+                hovertemplate="Actual: %{y:.2f}<extra></extra>" if x_axis_is_date else None,
             )
         )
     if predicted:
         fig.add_trace(
             go.Scatter(
-                x=list(range(1, len(predicted) + 1)),
+                x=x_values[:len(predicted)] if x_values else list(range(1, len(predicted) + 1)),
                 y=predicted,
                 mode="lines",
                 name="Predicted",
                 line={"color": pred_color, "width": 2},
+                hovertemplate="Predicted: %{y:.2f}<extra></extra>" if x_axis_is_date else None,
             )
         )
     if future_pred:
-        if predicted:
+        if predicted and future_x:
+            future_y = [predicted[-1]] + list(future_pred)
+            future_trace_x = [x_values[-1]] + list(future_x) if x_values else list(future_x)
+        elif predicted:
             future_y = [predicted[-1]] + list(future_pred)
             future_start = len(predicted)
+            future_trace_x = list(range(future_start, future_start + len(future_y)))
         else:
             future_y = list(future_pred)
-            future_start = 1
+            future_trace_x = list(future_x) if future_x else list(range(1, len(future_y) + 1))
         fig.add_trace(
             go.Scatter(
-                x=list(range(future_start, future_start + len(future_y))),
+                x=future_trace_x,
                 y=future_y,
                 mode="lines+markers",
                 name="Future (next days)",
                 line={"color": future_color, "width": 2, "dash": "dot"},
+                hovertemplate="Future: %{y:.2f}<extra></extra>" if x_axis_is_date else None,
             )
         )
+
+    if x_axis_is_date:
+        fig.update_xaxes(
+            type="date",
+            hoverformat="%d %b %Y",
+            tickformatstops=[
+                {"dtickrange": [None, "M1"], "value": "%d %b\n%Y"},
+                {"dtickrange": ["M1", "M12"], "value": "%b\n%Y"},
+                {"dtickrange": ["M12", None], "value": "%Y"},
+            ],
+        )
+        fig.update_layout(hovermode="x unified")
+
     return fig
 
 
@@ -159,6 +184,9 @@ def _snapshot_training_state():
             "total_epochs": TRAINING_STATE["total_epochs"],
             "train_losses": list(TRAINING_STATE["train_losses"]),
             "val_losses": list(TRAINING_STATE["val_losses"]),
+            "train_dates": list(TRAINING_STATE["train_dates"]),
+            "test_dates": list(TRAINING_STATE["test_dates"]),
+            "future_dates": list(TRAINING_STATE["future_dates"]),
             "train_actual": list(TRAINING_STATE["train_actual"]),
             "train_pred": list(TRAINING_STATE["train_pred"]),
             "test_actual": list(TRAINING_STATE["test_actual"]),
@@ -196,6 +224,9 @@ def _run_training_in_background(params):
             message=result.get("message", "Training finished"),
             train_losses=list(result.get("train_losses", [])),
             val_losses=list(result.get("val_losses", [])),
+            train_dates=list(result.get("train_dates", [])),
+            test_dates=list(result.get("test_dates", [])),
+            future_dates=list(result.get("future_dates", [])),
             train_actual=list(result.get("train_actual", [])),
             train_pred=list(result.get("train_pred", [])),
             test_actual=list(result.get("test_actual", [])),
@@ -352,6 +383,9 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             total_epochs=int(epochs),
             train_losses=[],
             val_losses=[],
+            train_dates=[],
+            test_dates=[],
+            future_dates=[],
             train_actual=[],
             train_pred=[],
             test_actual=[],
@@ -396,8 +430,8 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             [html.Span(status_text, style={"color": status_color})],
             line_figure("Loss/Train", state["train_losses"], "train", "#22c55e"),
             line_figure("Loss/Val", state["val_losses"], "val", "#60a5fa"),
-            close_figure("Train/Close", state["train_actual"], state["train_pred"], "#f59e0b"),
-            close_figure("Test/Close", state["test_actual"], state["test_pred"], "#f97316", state["test_future_pred"], "#a78bfa"),
+            close_figure("Train/Close", state["train_actual"], state["train_pred"], "#f59e0b", x_values=state["train_dates"]),
+            close_figure("Test/Close", state["test_actual"], state["test_pred"], "#f97316", x_values=state["test_dates"], future_pred=state["test_future_pred"], future_x=state["future_dates"], future_color="#a78bfa"),
             False,
             True,
         )

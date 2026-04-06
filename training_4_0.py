@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import os
 import numpy as np
+import pandas as pd
 #   tensorboard --logdir runs
 from helper_functions.save import save_graphs, save_model
 from helper_functions.data_loader import load_data
@@ -17,7 +18,7 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, pr
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     # load data
-    last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test = load_data(batch_size=batch_size, lookback=lookback)
+    last_real_close, last_real_date, train_dates, test_dates, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test = load_data(batch_size=batch_size, lookback=lookback, name=stock)
 
     # choose model
     model = model_switch(model_name)    # lstm or trs
@@ -81,6 +82,10 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, pr
     train_pred = _inv(train_preds_scaled)
     test_actual = _inv(y_test.numpy().flatten())
     test_pred = _inv(test_preds_scaled)
+    future_dates = pd.bdate_range(
+        start=pd.Timestamp(last_real_date) + pd.offsets.BDay(1),
+        periods=len(future_pred),
+    ).strftime('%Y-%m-%d').tolist()
 
     return {
         "message": f"Successfully trained {model_name} model for {stock} with lr={learning_rate}, epochs={num_epochs}, batch={batch_size}, lookback={lookback}. Best val loss: {best_loss:.6f}",
@@ -88,6 +93,9 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, pr
         "run_name": run_name,
         "train_losses": train_losses,
         "val_losses": val_losses,
+        "train_dates": train_dates,
+        "test_dates": test_dates,
+        "future_dates": future_dates,
         "train_actual": train_actual,
         "train_pred": train_pred,
         "test_actual": test_actual,

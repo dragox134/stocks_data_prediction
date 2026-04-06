@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import yfinance as yf
 
 from torch.utils.data import Dataset, DataLoader
 import torch
@@ -10,10 +11,17 @@ from sklearn.preprocessing import MinMaxScaler
 
 # loading the datam
 def dataset(name):
-    url = name
-    data = pd.read_csv(url)
-    data = data[['Date', 'Close']]
+    data = yf.download(name, period='max', progress=False, auto_adjust=False)
+    if data.empty:
+        raise ValueError(f"No data returned from Yahoo Finance for ticker: {name}")
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+
+    data = data.reset_index()[['Date', 'Close']]
     data['Date'] = pd.to_datetime(data['Date'])
+    data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
+    data.dropna(subset=['Close'], inplace=True)
     return data
 
 ###########################################################################
@@ -89,9 +97,8 @@ class TimeSeriesDataset(Dataset):
 ###########################################################################
 
 # loading data into variables
-def load_data(batch_size, lookback):
+def load_data(batch_size, lookback, name):
 
-    name = f'https://drive.google.com/uc?export=download&id=1MqY9yaql1XQbodFSngsHxGbyLdWRhVXj'
     data = dataset(name)
 
     shifted_df = prepare_dataframe_for_lstm(data, lookback)
@@ -101,10 +108,15 @@ def load_data(batch_size, lookback):
     train_dataset = TimeSeriesDataset(X_train, y_train)
     test_dataset = TimeSeriesDataset(X_test, y_test)
 
-    last_real_close = data['Close'].iloc[split_index + lookback:].iloc[-1]
+    shifted_dates = [timestamp.strftime('%Y-%m-%d') for timestamp in shifted_df.index.to_list()]
+    train_dates = shifted_dates[:split_index]
+    test_dates = shifted_dates[split_index:]
+
+    last_real_close = float(data['Close'].iloc[split_index + lookback:].iloc[-1])
+    last_real_date = shifted_dates[-1]
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    return last_real_close, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test
+    return last_real_close, last_real_date, train_dates, test_dates, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test
 ###########################################################################
