@@ -9,7 +9,7 @@ from training_4_0 import train
 app = dash.Dash(__name__, title="Stock Price Prediction")
 
 
-LABEL_STYLE = {"fontSize": "13px", "marginTop": "10px"}
+LABEL_STYLE = {"fontSize": "var(--font-size-label)", "marginTop": "var(--padding-inner)"}
 GRAPH_PANEL_BASE = {"backgroundColor": "#0f172a", "borderRadius": "12px", "padding": "8px"}
 
 STOCK_OPTIONS = [{"label": i, "value": i} for i in ["AAPL", "MSFT", "GOOG", "AMZN", "TSLA"]]
@@ -52,47 +52,55 @@ def empty_figure(title):
         font=dict(color="white"),
         xaxis=dict(gridcolor="#333"),
         yaxis=dict(gridcolor="#333"),
+        autosize=True,
+        margin=dict(l=36, r=18, t=46, b=36),
     )
     return fig
 
 
-def placeholder_figure(title, message="Graphs will be shown here"):
+def placeholder_figure(title, subtitle="Graphs will be shown here"):
     fig = empty_figure(title)
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
     fig.add_annotation(
-        text=message,
+        text=subtitle,
         x=0.5,
         y=0.5,
         xref="paper",
         yref="paper",
         showarrow=False,
-        font={"size": 16, "color": "#94a3b8"},
+        font={"size": 16, "color": "#9ca3af"},
     )
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
     return fig
 
 
-def line_figure(title, y_values, series_name, color):
-    if not y_values:
-        return placeholder_figure(title, "Training data will be shown here")
-
+def line_figure(title, values, label, color):
     fig = empty_figure(title)
-    fig.add_trace(
-        go.Scatter(
-            x=list(range(1, len(y_values) + 1)),
-            y=y_values,
-            mode="lines+markers",
-            name=series_name,
-            line={"color": color},
+    if values:
+        fig.add_trace(
+            go.Scatter(
+                x=list(range(1, len(values) + 1)),
+                y=values,
+                mode="lines",
+                name=label,
+                line={"color": color, "width": 2},
+            )
         )
-    )
+        fig.update_layout(showlegend=False)
+    else:
+        fig.add_annotation(
+            text="Waiting for training updates...",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            font={"size": 14, "color": "#9ca3af"},
+        )
     return fig
 
 
-def close_figure(title, actual, predicted, pred_color, x_values=None, future_pred=None, future_x=None, future_color="#e879f9"):
-    if not actual and not predicted and not future_pred:
-        return placeholder_figure(title, "Will be shown after training finishes")
-
+def close_figure(title, actual, predicted, pred_color, x_values=None, future_pred=None, future_x=None, future_color="#a78bfa"):
     fig = empty_figure(title)
     x_axis_is_date = bool(x_values or future_x)
 
@@ -164,7 +172,8 @@ def graph_panel(graph_id, title, border_color):
                 id=graph_id,
                 figure=placeholder_figure(title),
                 className="dash-graph",
-                config={"displayModeBar": False},
+                responsive=True,
+                config={"displayModeBar": False, "responsive": True},
             ),
         ],
     )
@@ -466,7 +475,7 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
                         html.Div(
                             [
                                 html.Div("Best Loss", style={"fontSize": "12px", "opacity": 0.85}),
-                                html.Div("-" if best_loss is None else f"{float(best_loss):.6f}", style={"fontSize": "34px", "fontWeight": 700, "lineHeight": "1.0", "color": "#38bdf8"}),
+                                html.Div("-" if best_loss is None else f"{float(best_loss):.6f}", style={"fontSize": "clamp(26px, 2vw, 36px)", "fontWeight": 700, "lineHeight": "1.0", "color": "#38bdf8"}),
                             ],
                             style={"marginTop": "14px"},
                         ),

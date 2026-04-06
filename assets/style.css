@@ -11,6 +11,7 @@
     --border-panel: #1f2937;
     --border-field: #334155;
     --gap-lg: 32px;
+    --gap-fluid: clamp(18px, 1.35vw, 32px);
     --radius-md: 8px;
     --radius-lg: 12px;
 }
@@ -18,7 +19,9 @@
 html,
 body {
     margin: 0;
-    overflow: hidden;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -37,32 +40,41 @@ body {
 
 .app-root {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .app-title {
-    margin: 16px 24px;
-    font-size: 26px;
+    margin: clamp(12px, 1vw, 16px) clamp(16px, 1.4vw, 24px);
+    font-size: clamp(24px, 1.35vw, 30px);
+    line-height: 1.2;
+    flex-shrink: 0;
 }
 
 .app-grid {
     display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: var(--gap-lg);
-    padding: 0 24px 24px;
+    grid-template-columns: clamp(250px, 16vw, 320px) minmax(0, 1fr);
+    gap: var(--gap-fluid);
+    padding: 0 clamp(16px, 1.4vw, 24px) clamp(14px, 1.4vw, 24px);
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
 }
 
 .dashboard-graph-grid,
 .row-2x2 {
     display: grid;
-    gap: var(--gap-lg);
+    gap: var(--gap-fluid);
+    min-width: 0;
 }
 
 .dashboard-graph-grid {
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    min-height: 0;
 }
 
 .row-2x2 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .control-panel {
@@ -77,7 +89,9 @@ body {
 }
 
 .control-panel--tall {
-    min-height: 480px;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
 }
 
 .control-panel h2 {
@@ -142,6 +156,17 @@ input::placeholder {
     background: var(--bg-panel);
     border-radius: var(--radius-lg);
     padding: 8px;
+    min-height: clamp(300px, 34vh, 480px);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.dash-graph,
+.dash-graph .js-plotly-plot,
+.dash-graph .plot-container {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .dash-dropdown .dash-dropdown-value-item svg {
@@ -245,6 +270,30 @@ input.dash-dropdown-search::placeholder {
     border-left: 1px solid var(--border-field) !important;
 }
 
+@media (max-width: 1600px) {
+    .app-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .dashboard-graph-grid {
+        grid-template-rows: none;
+    }
+
+    .row-2x2 {
+        grid-template-columns: 1fr;
+    }
+
+    .control-panel--tall {
+        height: auto;
+        min-height: clamp(340px, 42vh, 560px);
+    }
+
+    .graph-panels {
+        min-height: clamp(320px, 32vh, 460px);
+    }
+}
+
 @media (max-width: 1080px) {
     .app-grid {
         grid-template-columns: 1fr;
@@ -252,9 +301,22 @@ input.dash-dropdown-search::placeholder {
         gap: 24px;
     }
 
+    .dashboard-graph-grid {
+        grid-template-rows: none;
+    }
+
     .row-2x2 {
         grid-template-columns: 1fr;
         gap: 24px;
+    }
+
+    .control-panel--tall {
+        height: auto;
+        min-height: 0;
+    }
+
+    .graph-panels {
+        min-height: clamp(280px, 32vh, 380px);
     }
 }
 
