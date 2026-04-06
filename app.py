@@ -36,6 +36,8 @@ TRAINING_STATE = {
     "test_actual": [],
     "test_pred": [],
     "test_future_pred": [],
+    "train_accuracy": 0.0,
+    "test_accuracy": 0.0,
 }
 TRAINING_LOCK = threading.Lock()
 
@@ -157,7 +159,6 @@ def graph_panel(graph_id, title, border_color):
         className="graph-panels",
         style={**GRAPH_PANEL_BASE, "border": f"1px solid {border_color}"},
         children=[
-            html.H4(title, style={"margin": "8px 0"}),
             dcc.Graph(
                 id=graph_id,
                 figure=placeholder_figure(title),
@@ -192,6 +193,8 @@ def _snapshot_training_state():
             "test_actual": list(TRAINING_STATE["test_actual"]),
             "test_pred": list(TRAINING_STATE["test_pred"]),
             "test_future_pred": list(TRAINING_STATE["test_future_pred"]),
+            "train_accuracy": TRAINING_STATE["train_accuracy"],
+            "test_accuracy": TRAINING_STATE["test_accuracy"],
         }
 
 
@@ -233,6 +236,8 @@ def _run_training_in_background(params):
             test_actual=list(result.get("test_actual", [])),
             test_pred=list(result.get("test_pred", [])),
             test_future_pred=list(result.get("test_future_pred", [])),
+            train_accuracy=float(result.get("train_accuracy", 0.0)),
+            test_accuracy=float(result.get("test_accuracy", 0.0)),
         )
     except Exception as exc:
         _set_training_state(
@@ -368,8 +373,8 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
                 [html.Span("Training is already running", style={"color": "#f59e0b"})],
                 line_figure("Loss/Train", state["train_losses"], "train", "#22c55e"),
                 line_figure("Loss/Val", state["val_losses"], "val", "#60a5fa"),
-                placeholder_figure("Train/Close", "Will be shown after training finishes"),
-                placeholder_figure("Test/Close", "Will be shown after training finishes"),
+                placeholder_figure("Train/Close", "Close price on train data will be shown after the training finishes"),
+                placeholder_figure("Test/Close", "Close price on test data will be shown after the training finishes"),
                 True,
                 False,
             )
@@ -401,6 +406,8 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             test_actual=[],
             test_pred=[],
             test_future_pred=[],
+            train_accuracy=0.0,
+            test_accuracy=0.0,
         )
 
         worker = threading.Thread(target=_run_training_in_background, args=(params,), daemon=True)
@@ -408,10 +415,10 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
 
         return (
             [html.Span("Training started", style={"color": "#22c55e"}), html.Br(), f"stock={stock}, model={model_name}"],
-            placeholder_figure("Loss/Train", "Training in progress... waiting for epoch updates"),
-            placeholder_figure("Loss/Val", "Training in progress... waiting for epoch updates"),
-            placeholder_figure("Train/Close", "Will be shown after training finishes"),
-            placeholder_figure("Test/Close", "Will be shown after training finishes"),
+            placeholder_figure("Loss/Train", "Train loss over epochs will be shown during training"),
+            placeholder_figure("Loss/Val", "Validation loss over epochs will be shown during training"),
+            placeholder_figure("Train/Close", "Close price on train data will be shown after the training finishes"),
+            placeholder_figure("Test/Close", "Close price on test data will be shown after the training finishes"),
             True,
             False,
         )
@@ -427,8 +434,8 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             ],
             line_figure("Loss/Train", state["train_losses"], "train", "#22c55e"),
             line_figure("Loss/Val", state["val_losses"], "val", "#60a5fa"),
-            placeholder_figure("Train/Close", "Will be shown after training finishes"),
-            placeholder_figure("Test/Close", "Will be shown after training finishes"),
+            placeholder_figure("Train/Close", "Close price on train data will be shown after the training finishes"),
+            placeholder_figure("Test/Close", "Close price on test data will be shown after the training finishes"),
             True,
             False,
         )
@@ -436,8 +443,38 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
     if state["done"]:
         status_color = "#ef4444" if state["error"] else "#22c55e"
         status_text = state["message"] if state["message"] else "Training finished"
+        train_acc = float(state.get("train_accuracy", 0.0))
+        test_acc = float(state.get("test_accuracy", 0.0))
+
+        def _acc_color(value):
+            if value >= 80.0:
+                return "#22c55e"
+            if value >= 60.0:
+                return "#f59e0b"
+            return "#ef4444"
+
         return (
-            [html.Span(status_text, style={"color": status_color})],
+            [
+                html.Span(status_text, style={"color": status_color}),
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.Div("Train Fit (R²)", style={"fontSize": "12px", "opacity": 0.85}),
+                                html.Div(f"{train_acc:.2f}%", style={"fontSize": "34px", "fontWeight": 700, "lineHeight": "1.0", "color": _acc_color(train_acc)}),
+                            ],
+                            style={"marginTop": "14px"},
+                        ),
+                        html.Div(
+                            [
+                                html.Div("Test Fit (R²)", style={"fontSize": "12px", "opacity": 0.85}),
+                                html.Div(f"{test_acc:.2f}%", style={"fontSize": "34px", "fontWeight": 700, "lineHeight": "1.0", "color": _acc_color(test_acc)}),
+                            ],
+                            style={"marginTop": "10px"},
+                        ),
+                    ],
+                ),
+            ],
             line_figure("Loss/Train", state["train_losses"], "train", "#22c55e"),
             line_figure("Loss/Val", state["val_losses"], "val", "#60a5fa"),
             close_figure("Train/Close", state["train_actual"], state["train_pred"], "#f59e0b", x_values=state["train_dates"]),

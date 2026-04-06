@@ -82,6 +82,23 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, da
     train_pred = _inv(train_preds_scaled)
     test_actual = _inv(y_test.numpy().flatten())
     test_pred = _inv(test_preds_scaled)
+
+    def _r2_fit_score(actual, predicted):
+        actual_np = np.asarray(actual, dtype=float)
+        pred_np = np.asarray(predicted, dtype=float)
+
+        if actual_np.size < 2:
+            return 0.0
+
+        ss_res = float(np.sum((actual_np - pred_np) ** 2))
+        ss_tot = float(np.sum((actual_np - np.mean(actual_np)) ** 2))
+        eps = 1e-12
+        r2 = 1.0 - (ss_res / (ss_tot + eps))
+        return max(0.0, min(100.0, r2 * 100.0))
+
+    train_accuracy = _r2_fit_score(train_actual, train_pred)
+    test_accuracy = _r2_fit_score(test_actual, test_pred)
+
     future_dates = pd.bdate_range(
         start=pd.Timestamp(last_real_date) + pd.offsets.BDay(1),
         periods=days_to_predict,
@@ -100,5 +117,7 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, da
         "train_pred": train_pred,
         "test_actual": test_actual,
         "test_pred": test_pred,
+        "train_accuracy": train_accuracy,
+        "test_accuracy": test_accuracy,
         "test_future_pred": list(future_pred),
     }
