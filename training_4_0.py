@@ -12,7 +12,7 @@ from helper_functions.training_defs import train_one_epoch, validate_one_epoch
 from helper_functions.prediction import predict
 
 
-def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, progress_callback=None, update_every=10):
+def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, days_to_predict, progress_callback=None, update_every=10):
     print("training started")
     # setting device to train
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -65,7 +65,7 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, pr
     # Save prediction graphs once after training (instead of every epoch, which creates many overlapping lines)
     save_graphs(model, X_train, device, lookback, scaler, writer, X_test)
 
-    future_pred = predict(run_name, device, last_real_close, X_train, X_test)
+    future_pred = predict(run_name, device, last_real_close, X_train, X_test, days_to_predict=days_to_predict)
 
     writer.close()
 
@@ -84,7 +84,7 @@ def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, pr
     test_pred = _inv(test_preds_scaled)
     future_dates = pd.bdate_range(
         start=pd.Timestamp(last_real_date) + pd.offsets.BDay(1),
-        periods=len(future_pred),
+        periods=days_to_predict,
     ).strftime('%Y-%m-%d').tolist()
 
     return {

@@ -213,6 +213,7 @@ def _run_training_in_background(params):
             params["epochs"],
             params["batch"],
             params["lookback"],
+            params["days_to_predict"],
             progress_callback=on_progress,
             update_every=10,
         )
@@ -296,6 +297,13 @@ app.layout = html.Div(
                             step=1,
                             value=7,
                         ),
+                        html.Label("Days to Predict", style=LABEL_STYLE),
+                        dcc.Input(
+                            id="days-to-predict",
+                            type="number",
+                            step=1,
+                            value=7,
+                        ),
                         html.Button(
                             "Train Model",
                             id="train-button",
@@ -347,9 +355,10 @@ app.layout = html.Div(
     State("num-epochs", "value"),
     State("batch-size", "value"),
     State("lookback", "value"),
+    State("days-to-predict", "value"),
     prevent_initial_call=True,
 )
-def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookback):
+def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookback, days_to_predict):
     triggered = ctx.triggered_id
 
     if triggered == "train-button":
@@ -372,6 +381,7 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             "epochs": int(epochs),
             "batch": int(batch),
             "lookback": int(lookback),
+            "days_to_predict": int(days_to_predict),
         }
 
         _set_training_state(
