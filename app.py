@@ -38,6 +38,7 @@ TRAINING_STATE = {
     "test_future_pred": [],
     "train_accuracy": 0.0,
     "test_accuracy": 0.0,
+    "best_loss": None,
 }
 TRAINING_LOCK = threading.Lock()
 
@@ -195,6 +196,7 @@ def _snapshot_training_state():
             "test_future_pred": list(TRAINING_STATE["test_future_pred"]),
             "train_accuracy": TRAINING_STATE["train_accuracy"],
             "test_accuracy": TRAINING_STATE["test_accuracy"],
+            "best_loss": TRAINING_STATE["best_loss"],
         }
 
 
@@ -225,7 +227,7 @@ def _run_training_in_background(params):
             running=False,
             done=True,
             error=None,
-            message=result.get("message", "Training finished"),
+            message="Training finished successfully.",
             train_losses=list(result.get("train_losses", [])),
             val_losses=list(result.get("val_losses", [])),
             train_dates=list(result.get("train_dates", [])),
@@ -238,6 +240,7 @@ def _run_training_in_background(params):
             test_future_pred=list(result.get("test_future_pred", [])),
             train_accuracy=float(result.get("train_accuracy", 0.0)),
             test_accuracy=float(result.get("test_accuracy", 0.0)),
+            best_loss=float(result.get("best_loss", 0.0)),
         )
     except Exception as exc:
         _set_training_state(
@@ -408,6 +411,7 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
             test_future_pred=[],
             train_accuracy=0.0,
             test_accuracy=0.0,
+            best_loss=None,
         )
 
         worker = threading.Thread(target=_run_training_in_background, args=(params,), daemon=True)
@@ -445,6 +449,7 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
         status_text = state["message"] if state["message"] else "Training finished"
         train_acc = float(state.get("train_accuracy", 0.0))
         test_acc = float(state.get("test_accuracy", 0.0))
+        best_loss = state.get("best_loss")
 
         def _acc_color(value):
             if value >= 80.0:
@@ -460,10 +465,17 @@ def on_train(n_clicks, _n_intervals, stock, model_name, lr, epochs, batch, lookb
                     [
                         html.Div(
                             [
+                                html.Div("Best Loss", style={"fontSize": "12px", "opacity": 0.85}),
+                                html.Div("-" if best_loss is None else f"{float(best_loss):.6f}", style={"fontSize": "34px", "fontWeight": 700, "lineHeight": "1.0", "color": "#38bdf8"}),
+                            ],
+                            style={"marginTop": "14px"},
+                        ),
+                        html.Div(
+                            [
                                 html.Div("Train Fit (R²)", style={"fontSize": "12px", "opacity": 0.85}),
                                 html.Div(f"{train_acc:.2f}%", style={"fontSize": "34px", "fontWeight": 700, "lineHeight": "1.0", "color": _acc_color(train_acc)}),
                             ],
-                            style={"marginTop": "14px"},
+                            style={"marginTop": "10px"},
                         ),
                         html.Div(
                             [
