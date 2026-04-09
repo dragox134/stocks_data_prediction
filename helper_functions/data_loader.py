@@ -9,6 +9,9 @@ from copy import deepcopy as dc
 
 from sklearn.preprocessing import MinMaxScaler
 
+
+DEFAULT_SEED = 42
+
 # loading the datam
 def dataset(name):
     data = yf.download(name, period='max', progress=False, auto_adjust=False)
@@ -29,7 +32,6 @@ def dataset(name):
 # preparing data and removing blank ones
 def prepare_dataframe_for_lstm(df, n_steps):
     df = dc(df)
-
     df.set_index('Date', inplace=True)
 
     for i in range(1, n_steps+1):
@@ -97,7 +99,7 @@ class TimeSeriesDataset(Dataset):
 ###########################################################################
 
 # loading data into variables
-def load_data(batch_size, lookback, name):
+def load_data(batch_size, lookback, name, seed=DEFAULT_SEED):
 
     data = dataset(name)
 
@@ -115,7 +117,15 @@ def load_data(batch_size, lookback, name):
     last_real_close = float(data['Close'].iloc[split_index + lookback:].iloc[-1])
     last_real_date = shifted_dates[-1]
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    train_generator = torch.Generator()
+    train_generator.manual_seed(seed)
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        generator=train_generator,
+    )
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return last_real_close, last_real_date, train_dates, test_dates, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test

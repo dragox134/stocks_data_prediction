@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import os
+import random
 import numpy as np
 import pandas as pd
 #   tensorboard --logdir runs
@@ -12,13 +13,38 @@ from helper_functions.training_defs import train_one_epoch, validate_one_epoch
 from helper_functions.prediction import predict
 
 
-def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, days_to_predict, progress_callback=None, update_every=10):
+DEFAULT_SEED = 40
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    if hasattr(torch, "use_deterministic_algorithms"):
+        try:
+            torch.use_deterministic_algorithms(True, warn_only=True)
+        except TypeError:
+            torch.use_deterministic_algorithms(True)
+
+
+def train(stock, model_name, learning_rate, num_epochs, batch_size, lookback, days_to_predict, progress_callback=None, update_every=10, seed=DEFAULT_SEED):
     print("training started")
+    set_seed(seed)
+
     # setting device to train
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     # load data
-    last_real_close, last_real_date, train_dates, test_dates, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test = load_data(batch_size=batch_size, lookback=lookback, name=stock)
+    last_real_close, last_real_date, train_dates, test_dates, train_loader, test_loader, X_train, lookback, scaler, X_test, y_train, y_test = load_data(batch_size=batch_size, lookback=lookback, name=stock, seed=seed)
 
     # choose model
     model = model_switch(model_name)    # lstm or trs
