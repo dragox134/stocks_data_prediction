@@ -6,3 +6,8 @@ pandas
 scikit-learn
 tensorboard
 yfinance
+dash
+plotly
+requests
+SQLAlchemy
+tensorflow

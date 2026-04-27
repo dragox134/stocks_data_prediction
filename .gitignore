@@ -5,6 +5,6 @@ __pycache__/
 logs_jax
 runs/
 .github/
-stock_prediction_venv/
 .vscode/
 .venv/
+stock_prediction/
