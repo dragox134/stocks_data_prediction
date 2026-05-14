@@ -1,28 +1,23 @@
-# Stock Price Prediction Dashboard
+# Predikcia cien akcií na základe historických dát
 
-Maturitny projekt zamerany na predikciu cien akcii pomocou modelov strojoveho ucenia.
+Maturitný projekt zameraný na predikciu cien akcií pomocou modelov strojového učenia.
 
-## 1. Nazov projektu
+## Opis projektu
 
-Stock Price Prediction Dashboard
+Projekt predstavuje webovú aplikáciu vytvorenú v prostredí Python, ktorá umožňuje
+trénovanie modelov pre časové rady pomocou historických dát akcií.
 
-## 2. Opis projektu
+Hlavné ciele projektu:
+- navrhnúť a implementovať pipeline pre načítanie, prípravu a trénovanie dát,
+- porovnať reálne a predikované hodnoty ceny akcie,
+- vizualizovať priebeh trénovania a kvalitu modelu,
+- realizovať krátkodobú predikciu budúcich hodnôt.
 
-Projekt predstavuje webovu aplikaciu vytvorenu v prostredi Python, ktora umoznuje trenovanie modelov pre casove rady nad historickymi datami akcii.
-
-Hlavne ciele projektu:
-- navrhnut a implementovat pipeline pre nacitanie, pripravu a trenovanie dat,
-- porovnat realne a predikovane hodnoty ceny akcie,
-- vizualizovat priebeh trenovania a kvalitu modelu,
-- realizovat kratkodobu predikciu buducich hodnot.
-
-Aktualne implementovane modely:
+Aktuálne implementované modely:
 - LSTM
-- Transformer (volba `trs`)
+- Transformer (voľba `trs`)
 
-Hlavna aplikacna vrstva je v subore `app.py`, treningovy proces je implementovany v `training_4_0.py`.
-
-### Pouzite technologie
+### Použité technológie
 
 - Python 3.11
 - PyTorch
@@ -33,109 +28,89 @@ Hlavna aplikacna vrstva je v subore `app.py`, treningovy proces je implementovan
 - scikit-learn
 - TensorBoard
 - yfinance
-- requests
-- SQLAlchemy
-- SQLite
-- TensorFlow
 
-## 3. Struktura projektu
+## Štruktúra projektu
 
-- `app.py` - webove rozhranie, konfiguracia treningu, zobrazenie metrik a grafov
-- `training_4_0.py` - hlavny treningovy pipeline
-- `helper_functions/` - nacitanie dat, definicia modelov, predikcia, ukladanie vystupov, TensorBoard setup
-- `database_scripts/` - skripty pre nacitanie a aktualizaciu dat do SQLite
-- `api/api_functions.py` - sprava Alpha Vantage API klucov
-- `models/` - ulozene modely (checkpointy)
-- `runs/` - TensorBoard logy pre trening a predikciu
-- `assets/style.css` - stylovanie Dash aplikacie
+- `app.py` — webové rozhranie, konfigurácia tréningu, zobrazenie metrík a grafov
+- `training_4_0.py` — hlavný tréningový pipeline
+- `helper_functions/` — načítanie dát, definícia modelov, predikcia, ukladanie výstupov, TensorBoard setup
+- `assets/style.css` — štýlovanie Dash aplikácie
+- `archived` — niekoľko hlavných uložených spustení
+- `logs_pytorch` — všetky uložené spustenia
+- `models` — všetky uložené najlepšie modely
 
-## 4. Instalacia a spustenie
+> **Poznámka:** Súčasťou repozitára sú aj staršie skripty pre prácu s lokálnymi
+> SQLite databázami a Alpha Vantage API (`database_scripts/`, `dbs/`, `api/`).
+> Tieto komponenty vznikli ako prototyp v ranej fáze vývoja a nie sú súčasťou
+> hlavnej funkcionality aplikácie — slúžia výlučne ako ukážka počiatočného smeru projektu.
+> Aplikácia v aktuálnej verzii načítava dáta výhradne cez knižnicu `yfinance`.
 
-### 4.1 Poziadavky
+## Inštalácia a spustenie
 
-- Python 3.11 alebo novsi
+### Požiadavky
+
+- Python 3.11 alebo novší
 - pip
 
-### 4.2 Klon repozitara a vytvorenie virtualneho prostredia
+### Klon repozitára a vytvorenie virtuálneho prostredia
 
 ```bash
-git clone https://github.com/dragox134/stocks_data_prediction.git
-cd stocks_data_prediction
+git clone https://github.com/SPSE-Zoska-IV-C/Gurtner_Predikcia_cien_akcii_na_zaklade_historickych_dat.git
+cd Gurtner_Predikcia_cien_akcii_na_zaklade_historickych_dat
 python -m venv stock_prediction
 ```
 
 Windows PowerShell:
-
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 .\stock_prediction\Scripts\Activate.ps1
 ```
 
 Linux/macOS:
-
 ```bash
 source stock_prediction/bin/activate
 ```
 
-### 4.3 Instalacia zavislosti
+### Inštalácia závislostí
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4.4 Spustenie aplikacie
+### Spustenie aplikácie
 
 ```bash
 python app.py
 ```
 
-Po spusteni je aplikacia dostupna na adrese:
-- `http://127.0.0.1:8050`
+Po spustení je aplikácia dostupná na adrese `http://127.0.0.1:8050`.
 
-### 4.5 Volitelne: aktualizacia lokalnych databaz
+## Základný postup použitia
 
-Pre pracu s lokalnymi SQLite databazami su pripravene skripty:
-- `database_scripts/start.py`
-- `database_scripts/load_and_update.py`
-- `api/api_functions.py`
+1. V aplikácii vyberte model a tréningové parametre.
+2. Spustite tréning tlačidlom `Train Model`.
+3. Sledujte výstupy:
+   - `Loss/Train`
+   - `Loss/Val`
+   - `Train/Close`
+   - `Test/Close` (vrátane budúcej predikcie)
 
-Pred pouzitim je potrebne pripravit databazu API klucov (`dbs/api/api_keys.db`) s tabulkou `api_keys`.
+## Credits
 
-Spustenie:
+- **Autor projektu:** Leo Gürtner
+- **Vedúci práce:** Ing. Oliver Halaš
+- **Zdroje dát:** Yahoo Finance (cez `yfinance`)
 
-```bash
-python database_scripts/start.py
-```
+## Prispievanie
 
-Poznamka: Trening modelov v aktualnej verzii nacitava historicke data primarne cez kniznicu `yfinance`.
+Projekt je primárne určený ako školský projekt. Prípadné návrhy na zlepšenie sú vítané.
 
-## 5. Zakladny postup pouzitia
-
-1. V aplikacii vyber ticker, model a treningove parametre.
-2. Spusti trening tlacidlom `Train Model`.
-3. Sleduj vystupy:
-- `Loss/Train`
-- `Loss/Val`
-- `Train/Close`
-- `Test/Close` (vratane buducej predikcie)
-
-## 6. Credits
-
-- Autor projektu: Leo Gürtner
-- Typ projektu: skolsky maturitny projekt
-- Pouzite kniznice a frameworky: PyTorch, Dash, Plotly, scikit-learn, yfinance, SQLAlchemy, TensorBoard
-- Data zdroje: Yahoo Finance (cez `yfinance`), Alpha Vantage (pre databazove skripty)
-
-## 7. Prispievanie
-
-Projekt je primarne urceny ako skolsky projekt. Pripadne navrhy na zlepsenie su vitane.
-
-Odporucany postup:
-1. Fork repozitara
-2. Vytvorenie vlastneho branchu
+Odporúčaný postup:
+1. Fork repozitára
+2. Vytvorenie vlastného branchu
 3. Vytvorenie Pull Requestu s popisom zmien
 
-## 8. Licencia
+## Licencia
 
-Tento projekt je licencovany pod MIT licenciou.
-Podrobnosti su uvedene v subore `LICENSE`.
+Tento projekt je licencovaný pod MIT licenciou.
+Podrobnosti sú uvedené v súbore `LICENSE`.
