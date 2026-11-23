@@ -2,9 +2,12 @@
 dbs/api/
 add_api.py
 __pycache__/
+*.py[cod]
+assistant_instructions.md
 logs_jax
 runs/
 .github/
 .vscode/
 .venv/
 stock_prediction/
+stock_prediction_venv/
